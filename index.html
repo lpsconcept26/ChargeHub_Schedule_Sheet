@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ChargeHub Station Schedule</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+:root {
+  --bg: #F3F5F7; --surface: #FFFFFF; --surface2: #EAEEF2; --ink: #14202B; --muted: #5A6877; --line: #DAE0E6; --grid: #E6EBF0; --accent: #12243A; --onaccent: #FFFFFF;
+  --today: #D2452F; --good: #2E7D5B; --warn: #B7791F; --bad: #B5372B;
+  --t-project: #1F4E79; --t-power: #C98A1E; --t-embedded: #C4573F; --t-web: #2E86A8; --t-research: #3E8C6E; --t-site: #7A5C99;
+  --font: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; --mono: 'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace;
+  --left: 300px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0E151C; --surface: #151F29; --surface2: #1C2935; --ink: #E7EDF2; --muted: #93A2B1; --line: #26343F; --grid: #1D2A35; --accent: #E9B659; --onaccent: #14202B;
+  --today: #FF7A63; --good: #5FBF93; --warn: #E3A94B; --bad: #F0786B;
+  --t-project: #6FA8DC; --t-power: #E3A94B; --t-embedded: #E27C66; --t-web: #5BB5D5; --t-research: #6CC59C; --t-site: #A98BC9; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0E151C; --surface: #151F29; --surface2: #1C2935; --ink: #E7EDF2; --muted: #93A2B1; --line: #26343F; --grid: #1D2A35; --accent: #E9B659; --onaccent: #14202B;
+  --today: #FF7A63; --good: #5FBF93; --warn: #E3A94B; --bad: #F0786B;
+  --t-project: #6FA8DC; --t-power: #E3A94B; --t-embedded: #E27C66; --t-web: #5BB5D5; --t-research: #6CC59C; --t-site: #A98BC9; color-scheme: dark }
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 14px; line-height: 1.45; padding: 20px max(16px, env(safe-area-inset-right, 0px)) 32px max(16px, env(safe-area-inset-left, 0px)); }
+.wrap { max-width: 1500px; margin: 0 auto; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+[hidden] { display: none !important; }
+header.top { display: flex; flex-wrap: wrap; gap: 8px 24px; align-items: flex-end; justify-content: space-between; margin-bottom: 16px; }
+h1 { font-size: 24px; line-height: 1.2; margin: 0 0 2px; font-weight: 700; letter-spacing: -0.01em; text-wrap: balance; }
+.sub { color: var(--muted); margin: 0; max-width: 64ch; }
+.live { font-family: var(--mono); font-size: 12px; color: var(--muted); display: flex; gap: 8px; align-items: center; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--good); display: inline-block; }
+.dot.off { background: var(--warn); }
+.stats { display: grid; grid-template-columns: 1.5fr repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; min-width: 0; }
+.stat .k { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 4px; }
+.stat .v { font-size: 26px; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.stat .n { font-size: 12px; color: var(--muted); margin-top: 2px; overflow-wrap: anywhere; }
+.bar { height: 8px; background: var(--surface2); border-radius: 99px; overflow: hidden; margin-top: 8px; }
+.bar > i { display: block; height: 100%; background: var(--accent); border-radius: 99px; }
+.tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+.chip { border: 1px solid var(--line); background: var(--surface); border-radius: 99px; padding: 5px 12px; font-size: 13px; display: inline-flex; gap: 6px; align-items: center; }
+.chip[aria-pressed="true"] { background: var(--accent); color: var(--onaccent); border-color: var(--accent); }
+.chip .sw { width: 9px; height: 9px; border-radius: 3px; background: var(--tc); }
+.chip[aria-pressed="true"] .sw { outline: 1px solid var(--onaccent); }
+.sp { flex: 1; }
+.btn { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 6px 12px; font-weight: 500; text-decoration: none; display: inline-block; }
+.btn.pri { background: var(--accent); color: var(--onaccent); border-color: var(--accent); }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--surface); }
+.seg button { border: 0; background: transparent; padding: 6px 10px; font-size: 13px; }
+.seg button[aria-pressed="true"] { background: var(--surface2); font-weight: 600; }
+.gantt { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: auto; max-height: min(74vh, 900px); min-height: 280px; position: relative; }
+.inner { position: relative; }
+.hdr { position: sticky; top: 0; z-index: 6; display: flex; height: 46px; background: var(--surface); border-bottom: 1px solid var(--line); }
+.hdr .l { position: sticky; left: 0; z-index: 7; width: var(--left); flex: none; background: var(--surface); border-right: 1px solid var(--line); padding: 0 14px; display: flex; align-items: center; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.months { position: relative; flex: none; }
+.months span { position: absolute; top: 0; height: 100%; padding: 6px 8px 0; border-left: 1px solid var(--line); font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; }
+.months span small { display: block; font-family: var(--mono); font-weight: 400; color: var(--muted); font-size: 10px; }
+.row { display: flex; position: relative; border-bottom: 1px solid var(--grid); }
+.row .l { position: sticky; left: 0; z-index: 3; width: var(--left); flex: none; background: var(--surface); border: 0; border-right: 1px solid var(--line); border-radius: 0; padding: 6px 14px; text-align: left; display: block; min-width: 0; }
+.row.task { height: 44px; }
+.row.task:hover, .row.task:hover .l { background: var(--surface2); }
+.row.grp { height: 46px; background: var(--surface2); }
+.row.grp .l { background: var(--surface2); }
+.tl { position: relative; flex: none; }
+.nm { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; font-size: 13px; }
+.mt { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; gap: 8px; font-family: var(--mono); }
+.grp .nm { font-weight: 700; font-size: 14px; }
+.grp .mt { font-family: var(--font); }
+.pill { font-family: var(--font); font-size: 10px; font-weight: 600; padding: 0 6px; border-radius: 99px; border: 1px solid currentColor; line-height: 15px; }
+.pill.done { color: var(--good); } .pill.late, .pill.blocked { color: var(--bad); } .pill.behind { color: var(--warn); } .pill.prog { color: var(--t-web); } .pill.todo { color: var(--muted); }
+.bk { position: absolute; top: 11px; height: 22px; border-radius: 5px; background: color-mix(in srgb, var(--tc) 26%, var(--surface)); border: 1px solid color-mix(in srgb, var(--tc) 70%, var(--surface)); overflow: hidden; }
+.bk i { position: absolute; inset: 0 auto 0 0; background: var(--tc); }
+.bk.late { border-color: var(--bad); border-style: dashed; border-width: 1.5px; }
+.bk.blocked { background-image: repeating-linear-gradient(135deg, transparent 0 6px, color-mix(in srgb, var(--bad) 35%, transparent) 6px 8px); }
+.pc { position: absolute; top: 14px; font-family: var(--mono); font-size: 11px; color: var(--muted); white-space: nowrap; }
+.ms { position: absolute; top: 14px; width: 16px; height: 16px; transform: rotate(45deg); background: var(--tc); border: 2px solid var(--surface); box-shadow: 0 0 0 1.5px var(--tc); border-radius: 3px; }
+.ms.done { background: var(--good); box-shadow: 0 0 0 1.5px var(--good); }
+.ml { position: absolute; top: 12px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.ml small { font-family: var(--mono); font-weight: 400; color: var(--muted); margin-left: 6px; }
+.gs { position: absolute; top: 20px; height: 6px; border-radius: 3px; background: var(--tc); opacity: .85; }
+.gs::before, .gs::after { content: ""; position: absolute; top: 3px; width: 2px; height: 8px; background: var(--tc); }
+.gs::before { left: 0; } .gs::after { right: 0; }
+.ov { position: absolute; top: 46px; bottom: 0; left: var(--left); pointer-events: none; z-index: 1; }
+.ov .ln { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--line); }
+.ov .wk { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--grid); }
+.ov .td { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--today); z-index: 2; }
+.ov .td b { position: absolute; top: -1px; left: -14px; background: var(--today); color: #fff; font-size: 10px; padding: 1px 5px; border-radius: 3px; font-weight: 600; }
+.empty { padding: 56px 20px; text-align: center; color: var(--muted); }
+.empty h2 { color: var(--ink); font-size: 18px; margin: 0 0 6px; }
+.warn { background: color-mix(in srgb, var(--warn) 14%, var(--surface)); border: 1px solid var(--warn); border-radius: 8px; padding: 8px 12px; margin-bottom: 10px; font-size: 13px; }
+.note { color: var(--muted); font-size: 12px; margin-top: 10px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 12px; color: var(--muted); margin-top: 10px; align-items: center; }
+.legend span { display: inline-flex; gap: 6px; align-items: center; }
+.legend .bx { width: 22px; height: 10px; border-radius: 3px; background: color-mix(in srgb, var(--t-web) 26%, var(--surface)); border: 1px solid var(--t-web); position: relative; overflow: hidden; }
+.legend .bx i { position: absolute; inset: 0 40% 0 0; background: var(--t-web); }
+.legend .lt { border-style: dashed; border-color: var(--bad); }
+.legend .dm { width: 10px; height: 10px; transform: rotate(45deg); background: var(--t-project); border-radius: 2px; }
+.legend .td2 { width: 2px; height: 14px; background: var(--today); }
+.scrim { position: fixed; inset: 0; background: rgba(8,14,20,.45); z-index: 40; }
+.sheet { position: fixed; z-index: 41; top: 0; right: 0; bottom: 0; width: min(440px, 100%); background: var(--surface); border-left: 1px solid var(--line); padding: 20px; overflow: auto; display: flex; flex-direction: column; gap: 12px; }
+.sheet h2 { margin: 0; font-size: 18px; }
+.sheet dl { margin: 0; display: grid; grid-template-columns: 90px 1fr; gap: 8px 12px; font-size: 13px; }
+.sheet dt { color: var(--muted); } .sheet dd { margin: 0; overflow-wrap: anywhere; }
+.sheet .nt { white-space: pre-wrap; font-size: 13px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+.acts { display: flex; gap: 8px; margin-top: auto; padding-top: 8px; flex-wrap: wrap; }
+@media (max-width: 860px) { :root { --left: 190px; } .stats { grid-template-columns: 1fr 1fr; } .stat:first-child { grid-column: 1 / -1; } .mt .own { display: none; } }
+@media (max-width: 520px) { .sheet { top: auto; max-height: 92%; border-left: 0; border-top: 1px solid var(--line); border-radius: 14px 14px 0 0; width: 100%; } }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>ChargeHub Station Schedule</h1>
+      <p class="sub">Every team's work from design freeze to soft launch and the six-month pilot at the University of Ibadan. Click a task for its details. Progress is updated in the shared Google Sheet.</p>
+    </div>
+    <div class="live"><span class="dot off" id="dot"></span><span id="livetxt">Loading</span></div>
+  </header>
+
+  <section class="stats" id="stats" aria-label="Summary"></section>
+  <div id="warn" class="warn" hidden></div>
+
+  <div class="tools">
+    <div id="teamchips" style="display:contents"></div>
+    <button class="chip" id="attn" aria-pressed="false">Needs attention</button>
+    <span class="sp"></span>
+    <div class="seg" role="group" aria-label="Zoom" id="zoom">
+      <button data-z="0" aria-pressed="false">Overview</button><button data-z="1" aria-pressed="true">Standard</button><button data-z="2" aria-pressed="false">Detail</button>
+    </div>
+    <button class="btn" id="today">Go to today</button>
+    <a class="btn pri" id="edit" href="#" target="_blank" rel="noopener" hidden>Update progress in the Sheet</a>
+  </div>
+
+  <div class="gantt" id="gantt"><div class="empty"><h2>Loading the schedule</h2><p>Fetching tasks from the shared sheet.</p></div></div>
+
+  <div class="legend">
+    <span><i class="bx"><i></i></i> Planned dates, solid part is progress</span>
+    <span><i class="bx lt"><i></i></i> Past its end date and not finished</span>
+    <span><i class="dm"></i> Milestone</span>
+    <span><i class="td2"></i> Today</span>
+  </div>
+  <p class="note">Baseline dates are a draft. They assume funds, the university site and approvals arrive on time and that the pilot hardware takes about 16 weeks from order to delivery.</p>
+</div>
+<div id="sheetroot"></div>
+
+<script>
+/* ---------- Settings: the only part you need to edit ----------
+   csvUrl   : where the schedule comes from. Leave as 'schedule.csv' to use the file in this folder,
+              or paste the Google Sheets "Publish to web" CSV link (see README).
+   editUrl  : the link to open the Google Sheet for editing (shows the "Update progress" button).
+   refreshSeconds : how often the page re-reads the data. */
+const CONFIG = { csvUrl: 'schedule.csv', editUrl: '', refreshSeconds: 60 };
+
+const TEAMS = [
+  { id: 'project', name: 'Project and Partnerships', owner: 'Abdullateef Ogundipe' },
+  { id: 'power', name: 'Power Systems', owner: 'Muhammed Akinwale' },
+  { id: 'embedded', name: 'Embedded Systems', owner: 'Erioluwa Leke-Oduoye' },
+  { id: 'web', name: 'Web, Mobile and Cloud', owner: 'Diekola Akanbi' },
+  { id: 'research', name: 'Research and Pilot Evaluation', owner: 'Oludolapo Olufajo' },
+  { id: 'site', name: 'Site and Facility', owner: 'Abdullateef Ogundipe with UI works office' },
+];
+const DAY = 864e5, MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const $ = id => document.getElementById(id);
+const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
+const now = new Date(); const TODAY = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) / DAY;
+const ZOOMS = [3.2, 5.6, 9.5];
+let tasks = [], loaded = false, HS = 0, HE = 0, zoom = 1, px = ZOOMS[1], teamFilter = new Set(), attn = false, collapsed = new Set(), firstScroll = true;
+try { const z = localStorage.getItem('chs-zoom'); if (z !== null && ZOOMS[+z]) { zoom = +z; px = ZOOMS[zoom]; } const c = localStorage.getItem('chs-collapsed'); if (c) collapsed = new Set(JSON.parse(c)); } catch (e) {}
+
+/* ---------- CSV reading ---------- */
+function parseCSV(text) {
+  const rows = []; let row = [], f = '', q = false;
+  text = text.replace(/^﻿/, '');
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"') { if (text[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += c; }
+    else if (c === '"') q = true;
+    else if (c === ',') { row.push(f); f = ''; }
+    else if (c === '\n' || c === '\r') { if (c === '\r' && text[i + 1] === '\n') i++; row.push(f); f = ''; if (row.some(x => x.trim() !== '')) rows.push(row); row = []; }
+    else f += c;
+  }
+  row.push(f); if (row.some(x => x.trim() !== '')) rows.push(row);
+  return rows;
+}
+function toDay(s) {  // returns days since epoch or null; accepts YYYY-MM-DD, D/M/YYYY or M/D/YYYY (day first if the first number is over 12)
+  s = String(s || '').trim(); if (!s) return null;
+  let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (m) return Date.UTC(+m[1], +m[2] - 1, +m[3]) / DAY;
+  m = s.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/);
+  if (m) { let a = +m[1], b = +m[2]; const y = +m[3]; let d = a, mo = b; if (a <= 12 && b > 12) { mo = a; d = b; } else if (a <= 12 && b <= 12) { mo = a; d = b; } return Date.UTC(y, mo - 1, d) / DAY; }
+  const p = Date.parse(s); return isNaN(p) ? null : Math.floor(p / DAY);
+}
+const dstr = n => new Date(n * DAY).toISOString().slice(0, 10);
+const fmt = n => { const d = new Date(n * DAY); return d.getUTCDate() + ' ' + MON[d.getUTCMonth()] + ' ' + String(d.getUTCFullYear()).slice(2); };
+const truthy = v => /^(true|yes|y|1|x|✓)$/i.test(String(v || '').trim());
+function teamId(v) {
+  const s = String(v || '').trim().toLowerCase(); if (!s) return null;
+  const t = TEAMS.find(t => t.id === s || t.name.toLowerCase() === s || t.name.toLowerCase().startsWith(s) || s.startsWith(t.id));
+  return t ? t.id : null;
+}
+function readTasks(text) {
+  const rows = parseCSV(text); if (rows.length < 2) return { list: [], skipped: 0 };
+  const head = rows[0].map(h => h.trim().toLowerCase()); const ix = n => head.indexOf(n);
+  const col = { id: ix('id'), team: ix('team'), name: ix('name'), owner: ix('owner'), start: ix('start'), end: ix('end'), progress: ix('progress'), blocked: ix('blocked'), milestone: ix('milestone'), note: ix('note') };
+  const list = []; let skipped = 0;
+  rows.slice(1).forEach((r, i) => {
+    const g = k => col[k] >= 0 ? (r[col[k]] || '').trim() : '';
+    if (!g('name') && !g('start')) return;
+    const team = teamId(g('team')), s = toDay(g('start')); let e = toDay(g('end'));
+    if (!g('name') || !team || s === null) { skipped++; return; }
+    const milestone = truthy(g('milestone')); if (e === null || milestone || e < s) e = s;
+    let p = parseFloat(String(g('progress')).replace('%', '')); if (isNaN(p)) p = 0; p = Math.max(0, Math.min(100, Math.round(p)));
+    list.push({ id: g('id') || 'r' + i, team, name: g('name'), owner: g('owner'), s, e, progress: p, blocked: truthy(g('blocked')), milestone, note: g('note') });
+  });
+  return { list, skipped };
+}
+
+/* ---------- status and summary ---------- */
+function status(t) {
+  const prog = t.milestone ? (t.progress >= 100 ? 100 : 0) : t.progress;
+  if (prog >= 100) return { k: 'done', l: 'Done' };
+  if (t.blocked) return { k: 'blocked', l: 'Blocked' };
+  if (TODAY > t.e) return { k: 'late', l: 'Late' };
+  if (!t.milestone && TODAY >= t.s) {
+    const exp = Math.min(100, (TODAY - t.s + 1) / (t.e - t.s + 1) * 100);
+    return exp - prog > 25 ? { k: 'behind', l: 'Behind' } : { k: 'prog', l: 'In progress' };
+  }
+  return { k: 'todo', l: 'Not started' };
+}
+const needs = t => ['late', 'blocked', 'behind'].includes(status(t).k);
+function pct(list) { let w = 0, s = 0; for (const t of list) { if (t.milestone) continue; const d = t.e - t.s + 1; w += d; s += d * t.progress; } return w ? Math.round(s / w) : 0; }
+
+function renderStats() {
+  const box = $('stats'); box.textContent = '';
+  const real = tasks.filter(t => !t.milestone), all = pct(tasks), c = k => tasks.filter(t => status(t).k === k).length;
+  const a = el('div', 'stat'); a.append(el('div', 'k', 'Overall progress'), el('div', 'v', all + '%'));
+  const b = el('div', 'bar'), bi = el('i'); bi.style.width = all + '%'; b.append(bi); a.append(b, el('div', 'n', 'Weighted by task length, across ' + real.length + ' tasks')); box.append(a);
+  const mk = (k, v, n) => { const s = el('div', 'stat'); s.append(el('div', 'k', k), el('div', 'v', String(v)), el('div', 'n', n)); return s; };
+  box.append(mk('Done', c('done'), 'tasks and milestones'), mk('In progress', c('prog') + c('behind'), 'currently under way'), mk('Needs attention', c('late') + c('blocked') + c('behind'), 'late, behind or blocked'));
+  const up = tasks.filter(t => t.milestone && t.progress < 100 && t.e >= TODAY).sort((x, y) => x.e - y.e)[0];
+  box.append(up ? mk('Next milestone', Math.max(0, Math.round(up.e - TODAY)) + ' days', up.name + ', ' + fmt(up.s)) : mk('Next milestone', 'None', 'No upcoming milestones'));
+}
+function renderChips() {
+  const box = $('teamchips'); box.textContent = '';
+  const all = el('button', 'chip', 'All teams'); all.setAttribute('aria-pressed', String(teamFilter.size === 0)); all.onclick = () => { teamFilter.clear(); renderAll(); }; box.append(all);
+  for (const t of TEAMS) {
+    const b = el('button', 'chip'); b.style.setProperty('--tc', 'var(--t-' + t.id + ')'); b.append(el('i', 'sw'), document.createTextNode(t.name));
+    b.setAttribute('aria-pressed', String(teamFilter.has(t.id))); b.onclick = () => { teamFilter.has(t.id) ? teamFilter.delete(t.id) : teamFilter.add(t.id); renderAll(); }; box.append(b);
+  }
+  $('attn').setAttribute('aria-pressed', String(attn));
+}
+
+/* ---------- Gantt ---------- */
+function setHorizon() {
+  const mn = Math.min(TODAY - 14, ...tasks.map(t => t.s)), mx = Math.max(TODAY + 30, ...tasks.map(t => t.e));
+  const a = new Date(mn * DAY), b = new Date(mx * DAY);
+  HS = Date.UTC(a.getUTCFullYear(), a.getUTCMonth(), 1) / DAY; HE = Date.UTC(b.getUTCFullYear(), b.getUTCMonth() + 2, 1) / DAY;
+}
+function renderGantt() {
+  const g = $('gantt'), keepL = g.scrollLeft, keepT = g.scrollTop; g.textContent = '';
+  if (!loaded) { const e = el('div', 'empty'); e.append(el('h2', null, 'Loading the schedule'), el('p', null, 'Fetching tasks from the shared sheet.')); g.append(e); return; }
+  if (!tasks.length) { const e = el('div', 'empty'); e.append(el('h2', null, 'No tasks to show'), el('p', null, 'Check that the sheet has a header row (id, team, name, owner, start, end, progress, blocked, milestone, note) and at least one task.')); g.append(e); return; }
+  setHorizon();
+  const total = Math.round((HE - HS) * px), leftW = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--left')) || 300;
+  const inner = el('div', 'inner'); inner.style.width = (leftW + total) + 'px';
+  const hdr = el('div', 'hdr'); hdr.append(el('div', 'l', 'Task'));
+  const months = el('div', 'months'); months.style.width = total + 'px';
+  const ov = el('div', 'ov'); ov.style.width = total + 'px';
+  let d = new Date(HS * DAY);
+  while (d.getTime() / DAY < HE) {
+    const s = d.getTime() / DAY, nx = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1)), e = Math.min(HE, nx.getTime() / DAY);
+    const sp = el('span', null, MON[d.getUTCMonth()]); sp.append(el('small', null, String(d.getUTCFullYear()))); sp.style.left = ((s - HS) * px) + 'px'; sp.style.width = ((e - s) * px) + 'px'; months.append(sp);
+    const ln = el('div', 'ln'); ln.style.left = ((s - HS) * px) + 'px'; ov.append(ln); d = nx;
+  }
+  if (px >= 5) for (let w = Math.ceil((HS - 4) / 7) * 7 + 4; w < HE; w += 7) { if (w <= HS) continue; const k = el('div', 'wk'); k.style.left = ((w - HS) * px) + 'px'; ov.append(k); }
+  if (TODAY >= HS && TODAY <= HE) { const td = el('div', 'td'); td.style.left = ((TODAY - HS + 0.5) * px - 1) + 'px'; td.append(el('b', null, 'Today')); ov.append(td); }
+  hdr.append(months); inner.append(hdr, ov);
+  const list = tasks.filter(t => (!teamFilter.size || teamFilter.has(t.team)) && (!attn || needs(t)));
+  if (!list.length) { const e = el('div', 'empty'); e.append(el('h2', null, 'Nothing matches these filters'), el('p', null, 'Clear a team or the attention filter to see more.')); inner.append(e); }
+  for (const team of TEAMS) {
+    const items = list.filter(t => t.team === team.id).sort((a, b) => a.s - b.s || a.e - b.e);
+    if (!items.length) continue;
+    const full = tasks.filter(t => t.team === team.id);
+    const gr = el('div', 'row grp'); gr.style.setProperty('--tc', 'var(--t-' + team.id + ')');
+    const gl = el('button', 'l'); gl.setAttribute('aria-expanded', String(!collapsed.has(team.id)));
+    gl.append(el('span', 'nm', (collapsed.has(team.id) ? '▸ ' : '▾ ') + team.name));
+    const mt = el('span', 'mt'); mt.append(el('span', null, pct(full) + '% done'), el('span', 'own', team.owner)); gl.append(mt);
+    gl.onclick = () => { collapsed.has(team.id) ? collapsed.delete(team.id) : collapsed.add(team.id); try { localStorage.setItem('chs-collapsed', JSON.stringify([...collapsed])); } catch (e) {} renderGantt(); };
+    const gt = el('div', 'tl'); gt.style.width = total + 'px';
+    const mn = Math.min(...full.map(t => t.s)), mx = Math.max(...full.map(t => t.e));
+    const gs = el('div', 'gs'); gs.style.left = ((mn - HS) * px) + 'px'; gs.style.width = ((mx - mn + 1) * px) + 'px'; gt.append(gs);
+    gr.append(gl, gt); inner.append(gr);
+    if (collapsed.has(team.id)) continue;
+    for (const t of items) {
+      const st = status(t), r = el('div', 'row task'); r.style.setProperty('--tc', 'var(--t-' + t.team + ')');
+      const l = el('button', 'l'); l.onclick = () => openSheet(t); l.title = t.name; l.append(el('span', 'nm', t.name));
+      const m = el('span', 'mt'); m.append(el('span', 'pill ' + st.k, st.l), el('span', null, t.milestone ? fmt(t.s) : fmt(t.s) + ' to ' + fmt(t.e))); l.append(m);
+      const tl = el('div', 'tl'); tl.style.width = total + 'px'; tl.style.cursor = 'pointer'; tl.onclick = () => openSheet(t);
+      if (t.milestone) {
+        const x = (t.s - HS + 0.5) * px; const dm = el('div', 'ms' + (t.progress >= 100 ? ' done' : '')); dm.style.left = (x - 8) + 'px'; tl.append(dm);
+        const lb = el('div', 'ml', t.name); lb.append(el('small', null, fmt(t.s))); lb.style.left = (x + 16) + 'px'; tl.append(lb);
+      } else {
+        const x = (t.s - HS) * px, w = (t.e - t.s + 1) * px;
+        const bk = el('div', 'bk' + (st.k === 'late' ? ' late' : '') + (st.k === 'blocked' ? ' blocked' : '')); bk.style.left = x + 'px'; bk.style.width = w + 'px';
+        const f = el('i'); f.style.width = t.progress + '%'; bk.append(f); tl.append(bk);
+        const pc = el('div', 'pc', t.progress + '%'); pc.style.left = (x + w + 6) + 'px'; tl.append(pc);
+      }
+      r.append(l, tl); inner.append(r);
+    }
+  }
+  g.append(inner); g.scrollLeft = keepL; g.scrollTop = keepT;
+}
+function renderAll() { renderStats(); renderChips(); renderGantt(); }
+function scrollToToday() { const g = $('gantt'); g.scrollTo({ left: Math.max(0, (Math.min(Math.max(TODAY, HS), HE) - HS) * px - 40), behavior: 'smooth' }); }
+
+/* ---------- read-only details ---------- */
+function closeSheet() { $('sheetroot').textContent = ''; }
+function openSheet(t) {
+  const st = status(t), root = $('sheetroot'); root.textContent = '';
+  const scrim = el('div', 'scrim'); scrim.onclick = closeSheet;
+  const sh = el('div', 'sheet'); sh.setAttribute('role', 'dialog'); sh.setAttribute('aria-label', 'Task details');
+  sh.append(el('h2', null, t.name));
+  const dl = el('dl'); const row = (k, v) => { dl.append(el('dt', null, k), el('dd', null, v)); };
+  row('Team', TEAMS.find(x => x.id === t.team).name); row('Owner', t.owner || 'Not set'); row('Status', st.l);
+  row(t.milestone ? 'Date' : 'Dates', t.milestone ? fmt(t.s) : fmt(t.s) + ' to ' + fmt(t.e));
+  row(t.milestone ? 'Reached' : 'Progress', t.milestone ? (t.progress >= 100 ? 'Yes' : 'No') : t.progress + '%');
+  sh.append(dl);
+  if (t.note) sh.append(el('div', 'nt', t.note));
+  const acts = el('div', 'acts'); const close = el('button', 'btn', 'Close'); close.onclick = closeSheet; acts.append(close);
+  if (CONFIG.editUrl) { const a = el('a', 'btn pri', 'Update in the Sheet'); a.href = CONFIG.editUrl; a.target = '_blank'; a.rel = 'noopener'; acts.prepend(a); }
+  sh.append(acts); root.append(scrim, sh); close.focus();
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSheet(); });
+
+/* ---------- loading ---------- */
+function sourceUrl() {
+  let u = CONFIG.csvUrl; const q = new URLSearchParams(location.search).get('csv');
+  if (q && (!/^[a-z]+:/i.test(q) || /^https:\/\/docs\.google\.com\//.test(q))) u = q;   // allow ?csv= for a relative file or a Google Sheets link only
+  return u + (u.includes('?') ? '&' : '?') + 't=' + Date.now();
+}
+async function load() {
+  const set = (ok, t) => { $('dot').className = 'dot' + (ok ? '' : ' off'); $('livetxt').textContent = t; };
+  try {
+    const res = await fetch(sourceUrl(), { cache: 'no-store' }); if (!res.ok) throw new Error('HTTP ' + res.status);
+    const { list, skipped } = readTasks(await res.text());
+    tasks = list; loaded = true;
+    const w = $('warn'); if (skipped) { w.hidden = false; w.textContent = skipped + (skipped === 1 ? ' row was' : ' rows were') + ' skipped because the team, name or start date could not be read. Check the Sheet: team must be one of project, power, embedded, web, research, site, and dates should be written as YYYY-MM-DD.'; } else w.hidden = true;
+    set(true, 'Updated ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+    renderAll(); if (firstScroll && tasks.length) { firstScroll = false; setTimeout(scrollToToday, 60); }
+  } catch (e) {
+    if (!loaded) { loaded = true; tasks = []; renderAll(); }
+    set(false, 'Could not load the schedule. Retrying');
+  }
+}
+$('zoom').onclick = ev => { const b = ev.target.closest('button'); if (!b) return; zoom = +b.dataset.z; px = ZOOMS[zoom]; try { localStorage.setItem('chs-zoom', zoom); } catch (e) {} for (const x of $('zoom').children) x.setAttribute('aria-pressed', String(x === b)); renderGantt(); };
+for (const x of $('zoom').children) x.setAttribute('aria-pressed', String(+x.dataset.z === zoom));
+$('attn').onclick = () => { attn = !attn; renderAll(); };
+$('today').onclick = scrollToToday;
+if (CONFIG.editUrl) { const a = $('edit'); a.href = CONFIG.editUrl; a.hidden = false; }
+renderAll(); load(); setInterval(load, Math.max(15, CONFIG.refreshSeconds) * 1000);
+</script>
+</body>
+</html>
